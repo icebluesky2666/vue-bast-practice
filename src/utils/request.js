@@ -38,8 +38,11 @@ import { MessageBox } from 'element-ui'
  **/
 
 axios.defaults.baseURL = ''
-
-/* 普通请求 */
+axios.interceptors.request.use(function(config) {
+        config.headers.Authorization = localStorage.getItem('user-token')
+        return config
+    })
+    /* 普通请求 */
 export const request = (url, params, config = {}, auto_error_res = true, auto_error_data = true) => {
     const args = Object.assign({
         'method': 'post',
@@ -50,6 +53,15 @@ export const request = (url, params, config = {}, auto_error_res = true, auto_er
         if (!res.data.success) {
             res.data.error = res.data.error || {}
             console.error(res.data.error)
+                /* token失效 */
+            if (res.data.error.code === 100000) {
+                Message({
+                    message: '登录失效，请重新登录',
+                    type: 'error'
+                })
+                window.location.href = '/#/login'
+                return Promise.reject(res.data.error)
+            }
             if (auto_error_data) {
                 const err_msg = res.data.error.message || '未知的服务器错误，请联系管理员！'
                 const err_cod = res.data.error.code || -1
